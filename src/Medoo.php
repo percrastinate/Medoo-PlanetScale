@@ -25,8 +25,7 @@ use InvalidArgumentException;
 /**
  * The Medoo raw object.
  */
-class Raw
-{
+class Raw {
     /**
      * The array of mapping data for the raw string.
      *
@@ -60,8 +59,7 @@ class Raw
  * @method int avg(string $table, string $column, array $where)
  * @method int sum(string $table, string $column, array $where)
  */
-class Medoo
-{
+class Medoo {
     /**
      * The PDO object.
      *
@@ -200,8 +198,7 @@ class Medoo
      * @codeCoverageIgnore
      */
 
-    public function __construct(array $options)
-    {
+    public function __construct(array $options) {
         if (isset($options['prefix'])) {
             $this->prefix = $options['prefix'];
         }
@@ -334,8 +331,8 @@ class Medoo
                     $attr = [
                         'driver' => 'oci',
                         'dbname' => $options['host'] ?
-                            '//' . $options['host'] . ($isPort ? ':' . $port : ':1521') . '/' . $options['database'] :
-                            $options['database']
+                        '//' . $options['host'] . ($isPort ? ':' . $port : ':1521') . '/' . $options['database'] :
+                        $options['database']
                     ];
 
                     if (isset($options['charset'])) {
@@ -484,8 +481,7 @@ class Medoo
      *
      * @return string
      */
-    protected function mapKey(): string
-    {
+    protected function mapKey(): string {
         return ':MeD' . $this->guid++ . '_mK';
     }
 
@@ -496,8 +492,7 @@ class Medoo
      * @param array $map The array of input parameters value for prepared statement.
      * @return \PDOStatement|null
      */
-    public function query(string $statement, array $map = []): ?PDOStatement
-    {
+    public function query(string $statement, array $map = []): ?PDOStatement {
         $raw = $this->raw($statement, $map);
         $statement = $this->buildRaw($raw, $map);
 
@@ -512,8 +507,7 @@ class Medoo
      * @codeCoverageIgnore
      * @return \PDOStatement|null
      */
-    public function exec(string $statement, array $map = [], callable $callback = null): ?PDOStatement
-    {
+    public function exec(string $statement, array $map = [], callable $callback = null): ?PDOStatement {
         $this->statement = null;
         $this->errorInfo = null;
         $this->error = null;
@@ -589,8 +583,7 @@ class Medoo
      * @codeCoverageIgnore
      * @return string
      */
-    protected function generate(string $statement, array $map): string
-    {
+    protected function generate(string $statement, array $map): string {
         $identifier = [
             'mysql' => '`$1`',
             'mssql' => '[$1]'
@@ -626,8 +619,7 @@ class Medoo
      * @param array $map The array of mapping data for the raw string.
      * @return Medoo::raw
      */
-    public static function raw(string $string, array $map = []): Raw
-    {
+    public static function raw(string $string, array $map = []): Raw {
         $raw = new Raw();
 
         $raw->map = $map;
@@ -642,8 +634,7 @@ class Medoo
      * @param object $object
      * @return bool
      */
-    protected function isRaw($object): bool
-    {
+    protected function isRaw($object): bool {
         return $object instanceof Raw;
     }
 
@@ -654,8 +645,7 @@ class Medoo
      * @param array $map
      * @return string|null
      */
-    protected function buildRaw($raw, array &$map): ?string
-    {
+    protected function buildRaw($raw, array &$map): ?string {
         if (!$this->isRaw($raw)) {
             return null;
         }
@@ -693,8 +683,7 @@ class Medoo
      * @param string $string
      * @return string
      */
-    public function quote(string $string): string
-    {
+    public function quote(string $string): string {
         if ($this->type === 'mysql') {
             return "'" . preg_replace(['/([\'"])/', '/(\\\\\\\")/'], ["\\\\\${1}", '\\\${1}'], $string) . "'";
         }
@@ -708,10 +697,11 @@ class Medoo
      * @param string $table
      * @return string
      */
-    public function tableQuote(string $table): string
-    {
+    public function tableQuote(string $table): string {
         if (preg_match('/^[\p{L}_][\p{L}\p{N}@$#\-_]*$/u', $table)) {
-            return '"' . $this->prefix . $table . '"';
+            //PlanetScale Fix:
+            // return '"' . $this->prefix . $table . '"';
+            return '`' . $this->prefix . $table . '`';
         }
 
         throw new InvalidArgumentException("Incorrect table name: {$table}.");
@@ -723,12 +713,15 @@ class Medoo
      * @param string $column
      * @return string
      */
-    public function columnQuote(string $column): string
-    {
+    public function columnQuote(string $column): string {
         if (preg_match('/^[\p{L}_][\p{L}\p{N}@$#\-_]*(\.?[\p{L}_][\p{L}\p{N}@$#\-_]*)?$/u', $column)) {
+            //PlanetScale Fix:
+            // return strpos($column, '.') !== false ?
+            //     '"' . $this->prefix . str_replace('.', '"."', $column) . '"' :
+            //     '"' . $column . '"';
             return strpos($column, '.') !== false ?
-                '"' . $this->prefix . str_replace('.', '"."', $column) . '"' :
-                '"' . $column . '"';
+                '`' . $this->prefix . str_replace('.', '"."', $column) . '`' :
+                '`' . $column . '`';
         }
 
         throw new InvalidArgumentException("Incorrect column name: {$column}.");
@@ -741,8 +734,7 @@ class Medoo
      * @param string $type
      * @return array
      */
-    protected function typeMap($value, string $type): array
-    {
+    protected function typeMap($value, string $type): array {
         $map = [
             'NULL' => PDO::PARAM_NULL,
             'integer' => PDO::PARAM_INT,
@@ -771,8 +763,7 @@ class Medoo
      * @param bool $isJoin
      * @return string
      */
-    protected function columnPush(&$columns, array &$map, bool $root, bool $isJoin = false): string
-    {
+    protected function columnPush(&$columns, array &$map, bool $root, bool $isJoin = false): string {
         if ($columns === '*') {
             return $columns;
         }
@@ -839,8 +830,7 @@ class Medoo
      * @param string $conjunctor
      * @return string
      */
-    protected function dataImplode(array $data, array &$map, string $conjunctor): string
-    {
+    protected function dataImplode(array $data, array &$map, string $conjunctor): string {
         $stack = [];
 
         foreach ($data as $key => $value) {
@@ -1019,8 +1009,7 @@ class Medoo
      * @param array $map
      * @return string
      */
-    protected function whereClause($where, array &$map): string
-    {
+    protected function whereClause($where, array &$map): string {
         $clause = '';
 
         if (is_array($where)) {
@@ -1235,8 +1224,7 @@ class Medoo
      * @param mixed $join
      * @return bool
      */
-    protected function isJoin($join): bool
-    {
+    protected function isJoin($join): bool {
         if (!is_array($join)) {
             return false;
         }
@@ -1262,8 +1250,7 @@ class Medoo
      * @param array $map
      * @return string
      */
-    protected function buildJoin(string $table, array $join, array &$map): string
-    {
+    protected function buildJoin(string $table, array $join, array &$map): string {
         $tableJoin = [];
         $type = [
             '>' => 'LEFT',
@@ -1296,14 +1283,14 @@ class Medoo
 
                         $joins[] = (
                             strpos($key, '.') > 0 ?
-                                // For ['tableB.column' => 'column']
-                                $this->columnQuote($key) :
+                            // For ['tableB.column' => 'column']
+                            $this->columnQuote($key) :
 
-                                // For ['column1' => 'column2']
-                                $table . '.' . $this->columnQuote($key)
+                            // For ['column1' => 'column2']
+                            $table . '.' . $this->columnQuote($key)
                         ) .
-                        ' = ' .
-                        $this->tableQuote($match['alias'] ?? $match['table']) . '.' . $this->columnQuote($value);
+                            ' = ' .
+                            $this->tableQuote($match['alias'] ?? $match['table']) . '.' . $this->columnQuote($value);
                     }
 
                     $relation = 'ON ' . implode(' AND ', $joins);
@@ -1332,8 +1319,7 @@ class Medoo
      * @param bool $root
      * @return array
      */
-    protected function columnMap($columns, array &$stack, bool $root): array
-    {
+    protected function columnMap($columns, array &$stack, bool $root): array {
         if ($columns === '*') {
             return $stack;
         }
@@ -1484,8 +1470,7 @@ class Medoo
      * @param array $data
      * @return \PDOStatement|null
      */
-    private function returningQuery($query, &$map, &$data): ?PDOStatement
-    {
+    private function returningQuery($query, &$map, &$data): ?PDOStatement {
         $returnColumns = array_map(
             function ($value) {
                 return $value[0];
@@ -1494,9 +1479,9 @@ class Medoo
         );
 
         $query .= ' RETURNING ' .
-                    implode(', ', array_map([$this, 'columnQuote'], $returnColumns)) .
-                    ' INTO ' .
-                    implode(', ', array_keys($data));
+            implode(', ', array_map([$this, 'columnQuote'], $returnColumns)) .
+            ' INTO ' .
+            implode(', ', array_keys($data));
 
         return $this->exec($query, $map, function ($statement) use (&$data) {
             // @codeCoverageIgnoreStart
@@ -1519,8 +1504,7 @@ class Medoo
      * @param array $options Additional table options for creating a table.
      * @return \PDOStatement|null
      */
-    public function create(string $table, $columns, $options = null): ?PDOStatement
-    {
+    public function create(string $table, $columns, $options = null): ?PDOStatement {
         $stack = [];
         $tableOption = '';
         $tableName = $this->tableQuote($table);
@@ -1564,8 +1548,7 @@ class Medoo
      * @param string $table
      * @return \PDOStatement|null
      */
-    public function drop(string $table): ?PDOStatement
-    {
+    public function drop(string $table): ?PDOStatement {
         return $this->exec('DROP TABLE IF EXISTS ' . $this->tableQuote($table));
     }
 
@@ -1578,8 +1561,7 @@ class Medoo
      * @param array $where
      * @return array|null
      */
-    public function select(string $table, $join, $columns = null, $where = null): ?array
-    {
+    public function select(string $table, $join, $columns = null, $where = null): ?array {
         $map = [];
         $result = [];
         $columnMap = [];
@@ -1658,8 +1640,7 @@ class Medoo
      * @param string $primaryKey
      * @return \PDOStatement|null
      */
-    public function insert(string $table, array $values, string $primaryKey = null): ?PDOStatement
-    {
+    public function insert(string $table, array $values, string $primaryKey = null): ?PDOStatement {
         $stack = [];
         $columns = [];
         $fields = [];
@@ -1704,8 +1685,8 @@ class Medoo
                     case 'array':
                         $map[$mapKey] = [
                             strpos($key, '[JSON]') === strlen($key) - 6 ?
-                                json_encode($value) :
-                                serialize($value),
+                            json_encode($value) :
+                            serialize($value),
                             PDO::PARAM_STR
                         ];
                         break;
@@ -1761,8 +1742,7 @@ class Medoo
      * @param array $where
      * @return \PDOStatement|null
      */
-    public function update(string $table, $data, $where = null): ?PDOStatement
-    {
+    public function update(string $table, $data, $where = null): ?PDOStatement {
         $fields = [];
         $map = [];
         $returnings = [];
@@ -1797,8 +1777,8 @@ class Medoo
                     case 'array':
                         $map[$mapKey] = [
                             strpos($key, '[JSON]') === strlen($key) - 6 ?
-                                json_encode($value) :
-                                serialize($value),
+                            json_encode($value) :
+                            serialize($value),
                             PDO::PARAM_STR
                         ];
                         break;
@@ -1835,8 +1815,7 @@ class Medoo
      * @param array|Raw $where
      * @return \PDOStatement|null
      */
-    public function delete(string $table, $where): ?PDOStatement
-    {
+    public function delete(string $table, $where): ?PDOStatement {
         $map = [];
 
         return $this->exec('DELETE FROM ' . $this->tableQuote($table) . $this->whereClause($where, $map), $map);
@@ -1850,8 +1829,7 @@ class Medoo
      * @param array $where
      * @return \PDOStatement|null
      */
-    public function replace(string $table, array $columns, $where = null): ?PDOStatement
-    {
+    public function replace(string $table, array $columns, $where = null): ?PDOStatement {
         $map = [];
         $stack = [];
 
@@ -1884,8 +1862,7 @@ class Medoo
      * @param array $where
      * @return mixed
      */
-    public function get(string $table, $join = null, $columns = null, $where = null)
-    {
+    public function get(string $table, $join = null, $columns = null, $where = null) {
         $map = [];
         $result = [];
         $columnMap = [];
@@ -1939,15 +1916,14 @@ class Medoo
      * @param array $where
      * @return bool
      */
-    public function has(string $table, $join, $where = null): bool
-    {
+    public function has(string $table, $join, $where = null): bool {
         $map = [];
         $column = null;
 
         $query = $this->exec(
             $this->type === 'mssql' ?
-                $this->selectContext($table, $map, $join, $column, $where, Medoo::raw('TOP 1 1')) :
-                'SELECT EXISTS(' . $this->selectContext($table, $map, $join, $column, $where, 1) . ')',
+            $this->selectContext($table, $map, $join, $column, $where, Medoo::raw('TOP 1 1')) :
+            'SELECT EXISTS(' . $this->selectContext($table, $map, $join, $column, $where, 1) . ')',
             $map
         );
 
@@ -1971,11 +1947,10 @@ class Medoo
      * @param array $where
      * @return array
      */
-    public function rand(string $table, $join = null, $columns = null, $where = null): array
-    {
+    public function rand(string $table, $join = null, $columns = null, $where = null): array {
         $orderRaw = $this->raw(
             $this->type === 'mysql' ? 'RAND()'
-                : ($this->type === 'mssql' ? 'NEWID()'
+            : ($this->type === 'mssql' ? 'NEWID()'
                 : 'RANDOM()')
         );
 
@@ -2002,8 +1977,7 @@ class Medoo
      * @param array $where
      * @return string|null
      */
-    private function aggregate(string $type, string $table, $join = null, $column = null, $where = null): ?string
-    {
+    private function aggregate(string $type, string $table, $join = null, $column = null, $where = null): ?string {
         $map = [];
 
         $query = $this->exec($this->selectContext($table, $map, $join, $column, $where, $type), $map);
@@ -2026,8 +2000,7 @@ class Medoo
      * @param array $where
      * @return int|null
      */
-    public function count(string $table, $join = null, $column = null, $where = null): ?int
-    {
+    public function count(string $table, $join = null, $column = null, $where = null): ?int {
         return (int) $this->aggregate('COUNT', $table, $join, $column, $where);
     }
 
@@ -2040,8 +2013,7 @@ class Medoo
      * @param array $where
      * @return string|null
      */
-    public function avg(string $table, $join, $column = null, $where = null): ?string
-    {
+    public function avg(string $table, $join, $column = null, $where = null): ?string {
         return $this->aggregate('AVG', $table, $join, $column, $where);
     }
 
@@ -2054,8 +2026,7 @@ class Medoo
      * @param array $where
      * @return string|null
      */
-    public function max(string $table, $join, $column = null, $where = null): ?string
-    {
+    public function max(string $table, $join, $column = null, $where = null): ?string {
         return $this->aggregate('MAX', $table, $join, $column, $where);
     }
 
@@ -2068,8 +2039,7 @@ class Medoo
      * @param array $where
      * @return string|null
      */
-    public function min(string $table, $join, $column = null, $where = null): ?string
-    {
+    public function min(string $table, $join, $column = null, $where = null): ?string {
         return $this->aggregate('MIN', $table, $join, $column, $where);
     }
 
@@ -2082,8 +2052,7 @@ class Medoo
      * @param array $where
      * @return string|null
      */
-    public function sum(string $table, $join, $column = null, $where = null): ?string
-    {
+    public function sum(string $table, $join, $column = null, $where = null): ?string {
         return $this->aggregate('SUM', $table, $join, $column, $where);
     }
 
@@ -2094,8 +2063,7 @@ class Medoo
      * @codeCoverageIgnore
      * @return void
      */
-    public function action(callable $actions): void
-    {
+    public function action(callable $actions): void {
         if (is_callable($actions)) {
             $this->pdo->beginTransaction();
 
@@ -2121,8 +2089,7 @@ class Medoo
      * @codeCoverageIgnore
      * @return string|null
      */
-    public function id(string $name = null): ?string
-    {
+    public function id(string $name = null): ?string {
         $type = $this->type;
 
         if ($type === 'oracle') {
@@ -2142,8 +2109,7 @@ class Medoo
      * @codeCoverageIgnore
      * @return Medoo
      */
-    public function debug(): self
-    {
+    public function debug(): self {
         $this->debugMode = true;
 
         return $this;
@@ -2155,8 +2121,7 @@ class Medoo
      * @codeCoverageIgnore
      * @return void
      */
-    public function beginDebug(): void
-    {
+    public function beginDebug(): void {
         $this->debugMode = true;
         $this->debugLogging = true;
     }
@@ -2167,8 +2132,7 @@ class Medoo
      * @codeCoverageIgnore
      * @return void
      */
-    public function debugLog(): array
-    {
+    public function debugLog(): array {
         $this->debugMode = false;
         $this->debugLogging = false;
 
@@ -2181,8 +2145,7 @@ class Medoo
      * @codeCoverageIgnore
      * @return string|null
      */
-    public function last(): ?string
-    {
+    public function last(): ?string {
         if (empty($this->logs)) {
             return null;
         }
@@ -2198,8 +2161,7 @@ class Medoo
      * @codeCoverageIgnore
      * @return string[]
      */
-    public function log(): array
-    {
+    public function log(): array {
         return array_map(
             function ($log) {
                 return $this->generate($log[0], $log[1]);
@@ -2214,8 +2176,7 @@ class Medoo
      * @codeCoverageIgnore
      * @return array
      */
-    public function info(): array
-    {
+    public function info(): array {
         $output = [
             'server' => 'SERVER_INFO',
             'driver' => 'DRIVER_NAME',
